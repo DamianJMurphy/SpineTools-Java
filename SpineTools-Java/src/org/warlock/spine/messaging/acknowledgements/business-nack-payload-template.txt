@@ -1,0 +1,53 @@
+<hl7:BusinessResponseMessage xmlns:hl7="urn:hl7-org:v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<hl7:id root="__MESSAGE_ID__"/>
+	<hl7:creationTime value="__HL7_CREATION_DATE__"/>
+	<hl7:interactionId root="2.16.840.1.113883.2.1.3.2.4.12" extension="__INTERACTION_ID__"/>
+	<hl7:acknowledgedBy3 typeCode="AE">
+		<hl7:conveyingTransmission>
+			<hl7:id root="__INBOUND_TRANSMISSIONID__"/>
+		</hl7:conveyingTransmission>
+		<hl7:acknowledgementDetail typeCode="ER">
+			<hl7:code code="__ERROR_CODE__" codeSystem="2.16.840.1.113883.2.1.3.2.4.17.433" displayName="__ERROR_TEXT__"/>
+		</hl7:acknowledgementDetail>
+	</hl7:acknowledgedBy3>
+	<hl7:communicationFunction1 typeCode="SND">
+		<hl7:entity classCode="ENT" determinerCode="INSTANCE">
+			<hl7:id root="__RESPONDER_RECEIVER_ADDRESS_OID__" extension="__RESPONDER_RECEIVER_ADDRESS__"/>
+		</hl7:entity>
+	</hl7:communicationFunction1>
+	<hl7:communicationFunction typeCode="RCV">
+		<hl7:entity classCode="ENT" determinerCode="INSTANCE">
+			<hl7:id root="__RESPONDER_SENDER_ADDRESS_OID__" extension="__RESPONDER_SENDER_ADDRESS__"/>
+		</hl7:entity>
+	</hl7:communicationFunction>
+	<hl7:controlActEvent1 classCode="CACT" moodCode="EVN">
+		<hl7:author typeCode="AUT" contextControlCode="OP">
+			<hl7:COCD_TP145207GB01.AssignedAuthorDevice classCode="ASSIGNED">
+				<hl7:id root="2.16.840.1.113883.2.1.3.2.4.18.24" extension="ITK-NICA-TKW"/>
+				<hl7:templateId root="2.16.840.1.113883.2.1.3.2.4.18.2" extension="COCD_TP145207GB01#AssignedAuthorDevice"/>
+				<hl7:assignedAuthoringDevice classCode="DEV" determinerCode="INSTANCE">
+					<hl7:manufacturerModelName>ITK Accreditation NICA-TKW</hl7:manufacturerModelName>
+					<hl7:softwareName>org.warlock.tk.internalservices.rules.routingactor.RoutingActor</hl7:softwareName>
+					<hl7:templateId root="2.16.840.1.113883.2.1.3.2.4.18.2" extension="COCD_TP145207GB01#assignedAuthoringDevice"/>
+				</hl7:assignedAuthoringDevice>
+				<hl7:representedOrganization classCode="ORG" determinerCode="INSTANCE">
+					<hl7:id root="2.16.840.1.113883.2.1.3.2.4.19.1" extension="X09"/>
+					<hl7:name>NICA-TKW</hl7:name>
+					<hl7:templateId root="2.16.840.1.113883.2.1.3.2.4.18.2" extension="COCD_TP145207GB01#representedOrganization"/>
+				</hl7:representedOrganization>
+			</hl7:COCD_TP145207GB01.AssignedAuthorDevice>
+		</hl7:author>
+	</hl7:controlActEvent1>
+	<hl7:acknowledgedBy2 typeCode="AE">
+		<hl7:conveyingTransmission>
+			<hl7:id root="__INBOUND_PAYLOAD_ID__"/>
+			<hl7:controlActEvent classCode="CACT" moodCode="EVN">
+				<hl7:reason typeCode="RSON">
+					<hl7:detectedIssueEvent classCode="ALRT" moodCode="EVN">
+						<hl7:text>__ERROR_TEXT__: __DIAGNOSTIC_TEXT__</hl7:text>
+					</hl7:detectedIssueEvent>
+				</hl7:reason>
+			</hl7:controlActEvent>
+		</hl7:conveyingTransmission>
+	</hl7:acknowledgedBy2>
+</hl7:BusinessResponseMessage>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:eb="http://www.oasis-open.org/committees/ebxml-msg/schema/m
+sg-header-2_0.xsd" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+	<soap:Header>
+		<eb:MessageHeader eb:version="2.0" soap:mustUnderstand="1">
+			<eb:From>
+				<eb:PartyId eb:type="urn:nhs:names:partyType:ocs+serviceInstance">__FROMPARTY__</eb:PartyId>
+			</eb:From>
+			<eb:To>
+				<eb:PartyId eb:type="urn:nhs:names:partyType:ocs+serviceInstance">__TOPARTY__</eb:PartyId>
+			</eb:To>
+			<eb:CPAId>__CPAID__</eb:CPAId>
+			<eb:ConversationId>__CONVERSATIONID__</eb:ConversationId>
+			<eb:Service>urn:oasis:names:tc:ebxml-msg:service</eb:Service>
+			<eb:Action>MessageError</eb:Action>
+			<eb:MessageData>
+				<eb:MessageId>__MESSAGEID__</eb:MessageId>
+				<eb:Timestamp>__TIMESTAMP__</eb:Timestamp>
+				<eb:RefToMessageId>__REFTOMESSAGEID__</eb:RefToMessageId>
+			</eb:MessageData>
+		</eb:MessageHeader>
+		<eb:ErrorList eb:id="__ERROR_LIST_ID__" eb:highestSeverity="Error" eb:version="2.0" SOAP:mustUnderstand="1">
+			<eb:Error eb:id="__ERROR_ID__" eb:errorCode="__ERROR_ERRORCODE_REQUIRED__" eb:severity="Error" eb:codeContext="__ERROR_CODECONTEXT__">
+				<eb:Description xml:lang="en-GB">__ERROR_DESCRIPTION__</eb:Description>
+			</eb:Error>
+		</eb:ErrorList>
+	</soap:Header>
+	<soap:Body/>
+</soap:Envelope>

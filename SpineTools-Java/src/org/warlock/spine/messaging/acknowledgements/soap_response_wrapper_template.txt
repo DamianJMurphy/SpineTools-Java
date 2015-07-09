@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:wsa="http://www.w3.org/2005/08/addressing" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+	<soap:Header>
+		<wsa:MessageID>__MESSAGEID__</wsa:MessageID>
+		<wsa:Action>__ACTION__</wsa:Action>
+		<wsa:To>__TO_ADDRESS__</wsa:To>
+		<wsse:Security>
+			<wsu:Timestamp>
+				<wsu:Created>__TIMESTAMP__</wsu:Created>
+				<wsu:Expires>__EXPIRES__</wsu:Expires>			
+			</wsu:Timestamp>
+			<wsse:UsernameToken>
+				<wsse:Username>__USER_NAME__</wsse:Username>
+			</wsse:UsernameToken>
+		</wsse:Security>
+	</soap:Header>
+	<soap:Body>__PAYLOAD_BODY__</soap:Body>
+</soap:Envelope>

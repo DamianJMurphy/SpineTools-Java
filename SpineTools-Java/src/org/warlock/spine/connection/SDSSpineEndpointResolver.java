@@ -39,7 +39,10 @@ public class SDSSpineEndpointResolver
     //
     private static final String[] ALL_ATTRIBUTES = null;
     private static final String UNIQUE_IDENTIFIER = "uniqueIdentifier";
-    private static final String SERVICES_ROOT = "ou=services, o=nhs";
+    
+    private static final String CIS_SERVICES_ROOT = "ou=services, o=nhs";
+    private static final String OPENTEST_SERVICES_ROOT = "o=nhs";
+    
     private static final String MHSQUERY = "(&(objectclass=nhsMHS)(nhsMHSSvcIA=__SERVICE__)(nhsIDcode=__ORG__)__PARTYKEYFILTER__)";
     private static final String PKFILTER = "(nhsMhsPartyKey=__PK__)";
     private static final String ASQUERY = "(&(objectclass=nhsAS)(nhsASSvcIA=__SERVICE__)(nhsIDcode=__ORG__)(nhsMhsPartyKey=__PK__))";
@@ -86,6 +89,8 @@ public class SDSSpineEndpointResolver
     private String myAsid = null;
     private String myPartyKey = null;
     private HashMap<String,String> urlResolver = null;
+    
+    private String servicesRoot = null;
     
     /**
      * Initialise with a new SDSconnection.
@@ -138,6 +143,11 @@ public class SDSSpineEndpointResolver
     private void init()
             throws Exception
     {
+        if (ConditionalCompilationControls.OPENTEST) {
+            servicesRoot = OPENTEST_SERVICES_ROOT;
+        } else {
+            servicesRoot = CIS_SERVICES_ROOT;
+        }
         String cachedir = System.getProperty(CACHE_DIR_PROPERTY);
         String urlresolverfile = System.getProperty(URL_RESOLVER_FILE_PROPERTY);
         
@@ -277,7 +287,7 @@ public class SDSSpineEndpointResolver
         NamingEnumeration<SearchResult> results = null;
         ArrayList<SdsTransmissionDetails> output = null;
         try {
-            results = sdsconnection.getContext().search(SERVICES_ROOT, sbMhs.toString(), controls);
+            results = sdsconnection.getContext().search(servicesRoot, sbMhs.toString(), controls);
             output = new ArrayList<SdsTransmissionDetails>();
             while (results.hasMore()) {
                 SearchResult r = results.next();
@@ -290,7 +300,7 @@ public class SDSSpineEndpointResolver
                     substitute(sbAs, "__ORG__", o);
                     substitute(sbAs, "__PK__", sds.getPartyKey());
                     NamingEnumeration<SearchResult> asidResult = null;
-                    asidResult = sdsconnection.getContext().search(SERVICES_ROOT, sbAs.toString(), controls);                    
+                    asidResult = sdsconnection.getContext().search(servicesRoot, sbAs.toString(), controls);                    
                     while (asidResult.hasMore()) {
                         SearchResult as = asidResult.next();
                         Attributes attrs = as.getAttributes();

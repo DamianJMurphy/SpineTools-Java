@@ -38,9 +38,26 @@ package org.warlock.spine.connection;
 public class ConditionalCompilationControls {
    
     /**
+     * Set to true for environments where the SpineSecurityContext is needed to establish
+     * an SSL connection to SDS before LDAP is spoken over it. False just uses the stock
+     * Java LDAPS libraries.
+     */
+    public static final boolean LDAPOVERTLS = true;
+    
+    /**
+     * Set to false for an environment where SDS is in clear
+     */
+    public static final boolean LDAPS = true;
+    
+    /**
+     * Set to true when using the opentest environment to satisfy SDS requests.
+     */
+    public static final boolean OPENTEST = true;
+    
+    /**
      * Set true to enable clear-text sockets, false otherwise.
      */
-    public static final boolean TESTHARNESS = true;
+    public static final boolean TESTHARNESS = false;
     
     /**
      * Set if clear-text sockets are requested.

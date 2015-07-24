@@ -90,10 +90,14 @@ public class SDSconnection {
         @SuppressWarnings("UseOfObsoleteCollectionType")
         Hashtable<String,String> env = new Hashtable<>();
         env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
-        env.put("java.naming.ldap.factory.socket", "org.warlock.spine.connection.SpineSecurityContext");
         env.put(Context.PROVIDER_URL, sdsUrl);
-        env.put(Context.SECURITY_PROTOCOL, "ssl");
-        env.put(Context.SECURITY_AUTHENTICATION, "none");
+        if (ConditionalCompilationControls.LDAPS && !ConditionalCompilationControls.OPENTEST) {
+            env.put(Context.SECURITY_PROTOCOL, "ssl");
+            env.put(Context.SECURITY_AUTHENTICATION, "none");
+            if (ConditionalCompilationControls.LDAPOVERTLS && !ConditionalCompilationControls.OPENTEST) {
+                env.put("java.naming.ldap.factory.socket", "org.warlock.spine.connection.SpineSecurityContext");
+            }
+        }
         ldapContext = new InitialLdapContext(env, null);
     }
     

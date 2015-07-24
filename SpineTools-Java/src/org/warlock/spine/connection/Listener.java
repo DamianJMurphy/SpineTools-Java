@@ -59,7 +59,7 @@ public class Listener
     private HashMap<String, Long> persistDurations = null;
     private int listenPort = 443;
     /**
-     * Instantiate a listener using the default security context from the Connction
+     * Instantiate a listener using the default security context from the Connection
      * Manager.
      * 
      * @throws Exception 
@@ -200,6 +200,13 @@ public class Listener
     public void startListening(SocketAddress a) 
             throws Exception
     {
+        // Avoid a race condition if there is an attempt to start the listener more than
+        // once, before it has actually finished starting to listen.
+        //
+        if (this.getState() != Thread.State.NEW)
+            return;
+        if (listening)
+            return;
         if (a == null) {
             listenAddress = new java.net.InetSocketAddress(listenPort);
         } else {
@@ -210,6 +217,8 @@ public class Listener
     
     @Override
     public void run() {
+        if (listening)
+            return;
     this.setName("Listener");
     try {
             //server = (SSLServerSocket)tlsContext.getServerSocketFactory().createServerSocket();

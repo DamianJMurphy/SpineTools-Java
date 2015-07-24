@@ -104,6 +104,15 @@ public class SpineMessageHandler
             int right = 0;
             int r = -1;
 
+            // Sanity check. If this doesn't work on a reliable message, there should be a retry. If it
+            // doesn't work on an unreliable message, well, it is unreliable. If it happens for any other
+            // reason then the requestor shouldn't be trying to talk to us anyway.
+            //
+            if (clen == -1) {
+                SpineToolsLogger.getInstance().log("org.warlock.spine.messaging.sendable.message", "Failed to get inbound content length, aborting");
+                socket.close();
+                return;
+            }
             buffer = new byte[clen];
             while (left > 0) {
                 r = socket.getInputStream().read(buffer, right, left);
@@ -121,8 +130,7 @@ public class SpineMessageHandler
             if (ConditionalCompilationControls.TESTHARNESS) {
                 if (ConditionalCompilationControls.otwMessageLogging) {
                     refMessage = message;
-                    SpineToolsLogger.getInstance().log("org.warlock.spine.messaging.sendable.message", "\r\nON THE WIRE INBOUND: \r\n\r\n" + message
-                    );
+                    SpineToolsLogger.getInstance().log("org.warlock.spine.messaging.sendable.message", "\r\nON THE WIRE INBOUND: \r\n\r\n" + message);
                 }
             }
 

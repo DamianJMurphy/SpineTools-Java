@@ -112,18 +112,24 @@ public class SpineHL7Message extends Attachment {
     }
 
     /**
-     * Used in message receipt to construct a SpineHL7Message from the given
-     * MIME part. This also extracts required details from the received message.
-     *
-     * @param m MIME part body
-     * @throws java.lang.Exception
+     * Construct from a standalone interaction string. Indicate if the "to" asid is to
+     * be extracted.
+     * 
+     * @param p String containing serialised HL7 interaction XML.
+     * @param parse true to extract the "to" ASID
+     * @throws Exception 
      */
-    public SpineHL7Message(String m) 
+    public SpineHL7Message(String p, boolean parse)
             throws Exception
     {
-        
-        hl7v3Payload = stripMimeHeaders(m);
-        setMimeType(HL7V3XMLMIMETYPE);
+        hl7v3Payload = p;
+        if (parse)
+            parsePayload(true);
+    }
+
+    private void parsePayload(boolean resolveTo)
+            throws Exception
+    {
         serialisation = hl7v3Payload;
         int idstart = hl7v3Payload.indexOf("id");
         if (idstart == -1)
@@ -167,8 +173,41 @@ public class SpineHL7Message extends Attachment {
         if (idend == -1)
             throw new Exception("Malformed HL7v3 - no from ASID (cannot find end of device id root)");
         fromAsid = hl7v3Payload.substring(idstart + 1, idend);
+
+        if (resolveTo) {
+            idstart = hl7v3Payload.indexOf("communicationFunctionRcv");
+            if (idstart == -1)
+                throw new Exception("Malformed HL7v3 - no to ASID");
+            idstart = hl7v3Payload.indexOf("extension", idstart);
+            if (idstart == -1)
+                throw new Exception("Malformed HL7v3 - no to ASID (cannot find device id extension)");
+            idstart = hl7v3Payload.indexOf("\"", idstart);
+            if (idstart == -1)
+                throw new Exception("Malformed HL7v3 - no to ASID (cannot find start of device id root)");
+            idend = hl7v3Payload.indexOf("\"", idstart + 1);
+            if (idend == -1)
+                throw new Exception("Malformed HL7v3 - no to ASID (cannot find end of device id root)");
+            toasid = hl7v3Payload.substring(idstart + 1, idend);
+            myasid = fromAsid;
+        }
         
-        // IMPROVEMENT: Add a configuration item to (optionally) check that the "toAsid" is us.
+        // IMPROVEMENT: Add a configuration item to (optionally) check that the "toAsid" is us.        
+    }
+    
+    /**
+     * Used in message receipt to construct a SpineHL7Message from the given
+     * MIME part. This also extracts required details from the received message.
+     *
+     * @param m MIME part body
+     * @throws java.lang.Exception
+     */
+    public SpineHL7Message(String m) 
+            throws Exception
+    {
+        
+        hl7v3Payload = stripMimeHeaders(m);
+        setMimeType(HL7V3XMLMIMETYPE);
+        parsePayload(false);
     }
 
     /**
@@ -192,6 +231,8 @@ public class SpineHL7Message extends Attachment {
         return sb.toString();
     }
 
+    public String getInteractionId() { return interactionId; }
+    
     private void init(String ia, String h) {
         interactionId = ia;
         isQuery = (interactionId.charAt(0) == 'Q');

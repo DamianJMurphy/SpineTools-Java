@@ -1,7 +1,7 @@
 /*
 
  Copyright 2014 Health and Social Care Information Centre
- Solution Assurance <damian.murphy@hscic.gov.uk>
+ Solution Assurance damian.murphy@hscic.gov.uk
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import org.warlock.spine.logging.SpineToolsLogger;
  * leans toward ebXml as it handles expiry and the messaging contract properties that are
  * principally ebXml concepts.
  * 
- * @author Damian Murphy <damian.murphy@hscic.gov.uk>
+ * @author Damian Murphy damian.murphy@hscic.gov.uk
  */
 public abstract class Sendable {
 
@@ -48,7 +48,8 @@ public abstract class Sendable {
     protected String synchronousResponse = null;
     protected String resolvedUrl = null;
     protected String soapAction = null;
-    protected String onTheWireRequest = null;
+    protected byte[] onTheWireRequest = null;
+    protected byte[] onTheWireResponse = null;
 
     protected Calendar started = Calendar.getInstance();
     protected Calendar lastTry = null;
@@ -85,7 +86,7 @@ public abstract class Sendable {
 
     /**
      * Get the time this message was first sent.
-     * @return 
+     * @return the time this message was first sent
      */
     public Calendar getStarted() {
         return (Calendar)started.clone();
@@ -98,7 +99,7 @@ public abstract class Sendable {
      * to calculate the nearest next retry time advances the last retry time and so
      * the message never gets retried.
      * 
-     * @return 
+     * @return the last time the message was retried
      */
     public Calendar lastTry() {
         return (Calendar) lastTry.clone();
@@ -110,7 +111,7 @@ public abstract class Sendable {
      * otherwise), "yes" if we still have retries to do. A timer will sweep up
      * persistDuration expiries in a different thread so don't bother checking
      * that here.
-     * @return 
+     * @return boolean indicating whether ok to try to send
      */
     public boolean recordTry() {
         if (retryCount < 1) {
@@ -200,17 +201,45 @@ public abstract class Sendable {
         }
         return doneAnything;
     }
-    public String getOnTheWireRequest() {
+    
+    /**
+     * Where a SessionCaptor is in use, this method can be used to retrieve the saved
+     * message as  sent over the wire.
+     * 
+     * @return Byte array containing the sent message, or null if no SessionCaptor is defined. 
+     */
+    public byte[] getOnTheWireRequest() {
         return onTheWireRequest;
     }
 
-    public void setOnTheWireRequest(String onTheWireRequest) {
-        this.onTheWireRequest = onTheWireRequest;
-            if(ConditionalCompilationControls.TESTHARNESS){
-                if(ConditionalCompilationControls.otwMessageLogging){
-                    SpineToolsLogger.getInstance().log("org.warlock.spine.messaging.sendable.message", "\r\nON THE WIRE OUTBOUND: \r\n\r\n"+ onTheWireRequest);
-                }
-            }
-
+    /**
+     * Where a SessionCaptor is in use, the Transmitter will call this to store a copy of the
+     * outbound request.
+     * 
+     * @param r 
+     */
+    public void setOnTheWireRequest(byte[] r) {
+        onTheWireRequest = r;
     }
+
+    /**
+     * Where a SessionCaptor is in use, this method can be used to retrieve the saved
+     * message response as  received over the wire.
+     * 
+     * @return Byte array containing the received response, or null if no SessionCaptor is defined. 
+     */
+    public byte[] getOnTheWireResponse() {
+        return onTheWireResponse;
+    }
+
+    /**
+     * Where a SessionCaptor is in use, the Transmitter will call this to store a copy of the
+     * response.
+     * 
+     * @param r 
+     */    
+    public void setOnTheWireResponse(byte[] r) {
+        onTheWireResponse = r;
+    }
+    
 }

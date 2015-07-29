@@ -1,6 +1,6 @@
  /*
  * Copyright 2014 Health and Social Care Information Centre
- Solution Assurance <damian.murphy@hscic.gov.uk>
+ Solution Assurance damian.murphy@hscic.gov.uk
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ import org.warlock.spine.messaging.acknowledgements.SendCDADistributionEnvelopeH
  * Singleton class to initialise and manage the resources used for sending and
  * receiving messages from TMS. Configured via System.properties.
  * 
- * @author Damian Murphy <damian.murphy@hscic.gov.uk>
+ * @author Damian Murphy damian.murphy@hscic.gov.uk
  */
 public class ConnectionManager {
 
@@ -109,6 +109,13 @@ public class ConnectionManager {
     private static final String MY_PARTYKEY = "org.warlock.spine.sds.mypartykey";
     
     /**
+     * System property. If set this will declare a class implementing org.warlock.spine.connection.SessionCaptor
+     * which will be used by the transmitter to record messages transmitted over the wire, and their synchronous
+     * responses.
+     */
+    private static final String SESSION_CAPTOR = "org.warlock.spine.messaging.sessioncaptureclass";
+    
+    /**
      * System property. If this is set to something beginning with "y" or "Y", the 
      * Connection Manager will use the NullSynchronousResponseHandler as the the default
      * handler (i.e. used unless an explicit instance has been set for a request type)
@@ -146,6 +153,8 @@ public class ConnectionManager {
      * This singleton instance.
      */
     private static final ConnectionManager me = new ConnectionManager();
+    
+    private SessionCaptor sessionCaptor = null;
     
     /**
      * Any exceptions thrown during the initialisation of the ConnectionManager
@@ -217,6 +226,7 @@ public class ConnectionManager {
     /**
      * Singleton constructor.
      */ 
+    @SuppressWarnings("UseSpecificCatch")
     private ConnectionManager()
     {
         /**
@@ -311,7 +321,19 @@ public class ConnectionManager {
         catch (java.lang.NumberFormatException | java.lang.NullPointerException er) {}
         
         persistDurations = loadReceivedPersistDurations();
+        
+        String sc = System.getProperty(SESSION_CAPTOR);
+        if (sc != null) {
+            try {
+                sessionCaptor = (SessionCaptor)((Class.forName(sc)).newInstance());
+            }
+            catch (Exception esc) {
+                System.err.println("Error instantiating SessionCaptor " + sc + " : " + esc.toString());
+            }
+        }
     }
+    
+    SessionCaptor getSessionCaptor() { return sessionCaptor; }
     
     public String getMessageDirectory() { return messageDirectory; }
     
@@ -387,7 +409,7 @@ public class ConnectionManager {
      * @param o Required ODS code of the owning organisation matches SDS nhsIDcode.
      * @param a Optional ASID filter, or null to apply no filter.
      * @param p Optional party key filter, or null to apply no filter.
-     * @return ArrayList<SdsTransmissionDetails> of matches. Note that in the case of multiple
+     * @return ArrayList &lt;SdsTransmissionDetails&gt; of matches. Note that in the case of multiple
      * matches this has no explicit order. In the case of no match, the list will be empty so an
      * isEmpty() check should be performed before trying to use the output of this method.
      */
@@ -410,7 +432,7 @@ public class ConnectionManager {
     { 
         return me; 
     }
-
+    
     /**
      * Starts the listener, and sets it listening, if it isn't already so. This method
      * will do nothing if the listener is already listening.
@@ -456,6 +478,10 @@ public class ConnectionManager {
         if (listener == null)
             return;
         listener.stopListening();
+       
+        // Added to elimintate invalid thread state exceptions when restarting a listener
+        // this ensures a new thread is constructed every time
+        listener = null;
     }
     
     /**
@@ -500,7 +526,7 @@ public class ConnectionManager {
     
     /**
      * Worker method called by the retry processing timer. This checks any reliable
-     * messages that have not yet had an acknowledgment (or explicit error) to see if they
+     * messages that have not yet had an acknowledgement (or explicit error) to see if they
      * need retrying, or if they are due for expiry. Any expired messages have the expiry
      * process, including any user-supplied expiry handler, called on them. 
      * 
@@ -559,13 +585,13 @@ public class ConnectionManager {
     /**
      * Work around the design flaw in SDS where the nhsMhsEndpoint URL does not always
      * contain the URL that a sender needs to use. If there is a "resolved" URL for the
-     * given service/interation, then use it. Otherwise return null (in which case the 
+     * given service/interaction, then use it. Otherwise return null (in which case the 
      * message should be sent to the endpoint URL given in its SdsTransmissionDetails).
      * 
      * This is fed from the URL resolver file, which for testing purposes requires an
      * instance of the file per environment.
      * 
-     * @param svcia
+     * @param svcia Service-qualified interaction id for the message to be sent.
      * @return The URL to use, overriding the value from SDS itself, or null if the SDS value should be used. 
      */
     public String resolveUrl(String svcia)
@@ -667,7 +693,7 @@ public class ConnectionManager {
     }
     
     /**
-     * Used for processing asynchronous acknowledgments. If the given message id is known
+     * Used for processing asynchronous acknowledgements. If the given message id is known
      * (i.e. if we have a request for it) then it is removed. Otherwise the unknown id is
      * logged. This is only called by the TMS listener at present, though in principle it
      * could be called for other transports.

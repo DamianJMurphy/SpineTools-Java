@@ -1,7 +1,7 @@
 /*
 
  Copyright 2014 Health and Social Care Information Centre
- Solution Assurance <damian.murphy@hscic.gov.uk>
+ Solution Assurance damian.murphy@hscic.gov.uk
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
  */
 package org.warlock.spine.connection;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
@@ -35,20 +34,20 @@ import org.warlock.spine.messaging.SynchronousResponseHandler;
 /**
  * Thread to handle sending messages. The run() method of this class opens a TLS
  * connection to Spine, and gets the Sendable message to serialise itself to the
- * connection's OutputStream. It then waits for an HTTP response.
+ * connection's OutputStream. It then waits for an HTTP response.<BR><BR>
  *
  * For a synchronous request the appropriate SynchronousResponseHandler is
- * called, not that for these case the Transmitter does NOT handle HTTP 500
+ * called, note that, for this case, the Transmitter does NOT handle HTTP 500
  * responses, nor does it make any distinction between the various possible HL7
  * "success" and "fail" messages that can be returned - these are left either to
  * the handler, or to the class that constructed the synchronous request and
  * asked the ConnectionManager to send it. The full HTTP response body is stored
- * in the Sendable.synchronousResponse member, as a String.
+ * in the Sendable.synchronousResponse member, as a String.<BR><BR>
  *
  * For an asynchronous request, the Transmitter handles synchronous acks or
- * errors signalling termination of retries.
+ * errors signalling termination of retries.<BR><BR>
  *
- * @author Damian Murphy <damian.murphy@hscic.gov.uk>
+ * @author Damian Murphy damian.murphy@hscic.gov.uk
  */
 public class Transmitter
         extends java.lang.Thread {
@@ -103,70 +102,38 @@ public class Transmitter
                     System.err.println("Asynchronous wait period not a valid integer - " + e.toString());
                 }
             }
-            
-//            try (SSLSocket s = (SSLSocket)sf.createSocket(u.getHost(), 443)) {
             try (Socket s = tlsContext.createSocket(host, port)) {
-
-                // TODO -- REMOVE THIS AND THE RELATED COMMENT BLOCKS AND LINES:
-                // The SpineSecurityContext is a SocketFactory and its createSocket()
-                // methods make SSLSockets that have already had startHandshake() called on
-                // them. So line 69 above can be removed, and line 73 changes to use the
-                // SpineSecurityContext directly. Then, the line below that re-does the
-                // startHandshake() can be removed. That will allow conditional compilation
-                // in the SpineSecurityContext to be used to distinguish between TKW use
-                // where a cleartext connection may be needed, and normal use where it isn't.
-                // First off, do the changes described here and see if the transmitter
-                // still works. 
-//                s.startHandshake();
-                ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-                TeeOutputStream tos = new TeeOutputStream(s.getOutputStream(), outStream);
-                sendable.write(tos);
-                sendable.setOnTheWireRequest(outStream.toString());
-                ByteArrayOutputStream inStream = new ByteArrayOutputStream();
-                TeeInputStream tis = new TeeInputStream(s.getInputStream(), inStream);
-                int replyLength = getHeader(tis);
-                if (ConditionalCompilationControls.TESTHARNESS) {
-                    if (ConditionalCompilationControls.otwMessageLogging) {
-                        String originatingMessageId = null;
-                        String message = outStream.toString();
-                        if (message == null) {
-                            originatingMessageId = null;
-                        } else {
-                            int start = message.indexOf("MessageId>");
-                            if (start == -1) {
-                                originatingMessageId = null;
-                            } else {
-                                start += "MessageId>".length();
-                                int end = message.indexOf("<", start);
-                                if (end == -1) {
-                                    originatingMessageId = null;
-                                } else {
-                                    originatingMessageId = message.substring(start, end);
-                                }
-                            }
-                        }
-                        SpineToolsLogger.getInstance().log("org.warlock.spine.messaging.sendable.message", "\r\nReference to Message ID " + originatingMessageId + " - ON THE WIRE SYNC INBOUND: \r\n\r\n" + inStream.toString());
+                int replyLength = -1;
+                SessionCaptor sc = c.getSessionCaptor();
+                if (sc == null) {
+                    sendable.write(s.getOutputStream());
+                    replyLength = getHeader(s.getInputStream());
+                    if (replyLength == -1) {
+                        SpineToolsLogger.getInstance().log("org.warlock.spine.connection.Transmitter.noResponse", "Could not read response sending " + sendable.getMessageId());
+                        s.close();
+                        return;
                     }
-                }
-                if (replyLength == -1) {
-                    SpineToolsLogger.getInstance().log("org.warlock.spine.connection.Transmitter.noResponse", "Could not read response sending " + sendable.getMessageId());
-                    s.close();
-                    return;
-                }
-                if (replyLength > 0) {
-                    // Read the response. If the request was synchronous, process the response
-                    // using the handler. Otherwise do ebXML ack processing.
-                    //
-                    byte[] buffer = new byte[replyLength];
-                    int rd = 0;
-                    int r = -1;
-                    do {
-                        r = s.getInputStream().read(buffer, rd, replyLength - rd);
-                        if (r == -1)
-                            throw new Exception("Unexpected EOF after reading " + rd + " of " + replyLength + " bytes");
-                        rd += r;
-                    } while (replyLength > rd);
-                    sendable.setSynchronousResponse(new String(buffer));
+                    if (replyLength > 0)
+                        readSynchronousReply(s.getInputStream(), replyLength);
+                } else {
+                    ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+                    TeeOutputStream tos = new TeeOutputStream(s.getOutputStream(), outStream);
+                    sendable.write(tos);
+                    sendable.setOnTheWireRequest(outStream.toByteArray());
+                    ByteArrayOutputStream inStream = new ByteArrayOutputStream();
+                    TeeInputStream tis = new TeeInputStream(s.getInputStream(), inStream);                    
+                    replyLength = getHeader(tis);
+                    if (replyLength == -1) {
+                        SpineToolsLogger.getInstance().log("org.warlock.spine.connection.Transmitter.noResponse", "Could not read response sending " + sendable.getMessageId());
+                        s.close();
+                        sc.capture(sendable);
+                        return;
+                    }
+                    if (replyLength > 0) {
+                        readSynchronousReply(tis, replyLength);
+                        sendable.setOnTheWireResponse(inStream.toByteArray());
+                    }
+                    sc.capture(sendable);
                 }
             }
             if (sendable.getType() == Sendable.SOAP) {
@@ -196,10 +163,35 @@ public class Transmitter
                 }
             }
         } catch (Exception eIo) {
-            SpineToolsLogger.getInstance().log("org.warlock.spine.connection.Transmitter.IOException", "IOException sending " + sendable.getMessageId());
+            SpineToolsLogger.getInstance().log("org.warlock.spine.connection.Transmitter.IOException", "IOException sending " + sendable.getMessageId() + eIo.getMessage());
         }
     }
-
+    
+    private void readSynchronousReply(InputStream is, int replyLength) 
+    {
+        // Read the response. If the request was synchronous, process the response
+        // using the handler. Otherwise do ebXML ack processing.
+        //
+        byte[] buffer = new byte[replyLength];
+        int rd = 0;
+        int r = -1;
+        do {
+            try {
+                r = is.read(buffer, rd, replyLength - rd);
+            }
+            catch (IOException e) {
+                SpineToolsLogger.getInstance().log("IOException caught reading reply: " + e.toString());
+                break;
+            }
+            if (r == -1) {
+                SpineToolsLogger.getInstance().log("Unexpected EOF after reading " + rd + " of " + replyLength + " bytes");
+                break;
+            }
+            rd += r;
+        } while (replyLength > rd);
+        sendable.setSynchronousResponse(new String(buffer));
+    }
+    
     private int getHeader(InputStream is)
             throws IOException {
         StringBuilder sb = new StringBuilder();
